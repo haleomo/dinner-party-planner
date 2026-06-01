@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'react';
 import logoText from '../assets/images/KaIkenaMenus-Text-No-Background.png';
+import logoTextCheddar from '../assets/images/KaIkenaMenus-Cheddar.png';
+import logoTextSolid from '../assets/images/KaIkenaMenus-Text.png';
+import logoNoText from '../assets/images/KaIkenaMenus-NoText.png';
+import logoCheddarSmilingTransparent from '../assets/images/KaIkenaMenus-Cheddar-Smiling-Transparent.png';
+import logoCheddarSmiling from '../assets/images/KaIkenaMenus-Cheddar-Smiling.png';
 
 const CATEGORY_ORDER = ['appetizer', 'main', 'side', 'dessert', 'drink'];
 
@@ -17,11 +22,21 @@ theme: 'Mediterranean garden dinner',
 avoidances: '',
 };
 
+const printLogoOptions = [
+{ id: 'text-no-background', label: 'Ka Ikena Text (No Background)', src: logoText },
+{ id: 'cheddar', label: 'Ka Ikena Cheddar', src: logoTextCheddar },
+{ id: 'text-solid', label: 'Ka Ikena Text', src: logoTextSolid },
+{ id: 'no-text', label: 'Ka Ikena (No Text)', src: logoNoText },
+{ id: 'cheddar-smiling-transparent', label: 'Ka Ikena Cheddar Smiling (Transparent)', src: logoCheddarSmilingTransparent },
+{ id: 'cheddar-smiling', label: 'Ka Ikena Cheddar Smiling', src: logoCheddarSmiling },
+];
+
 export default function App() {
 const [form, setForm] = useState(initialForm);
 const [recipes, setRecipes] = useState([]);
 const [error, setError] = useState('');
 const [printError, setPrintError] = useState('');
+const [selectedPrintLogoId, setSelectedPrintLogoId] = useState(printLogoOptions[0].id);
 const [isLoading, setIsLoading] = useState(false);
 const [expandedRecipeIds, setExpandedRecipeIds] = useState([]);
 const [selectedRecipeIds, setSelectedRecipeIds] = useState([]);
@@ -43,6 +58,10 @@ const groupedSelectedRecipes = useMemo(() => {
     recipes: selectedRecipes.filter((recipe) => recipe.category === category),
     })).filter((group) => group.recipes.length > 0);
 }, [selectedRecipes]);
+
+const selectedPrintLogo = useMemo(() => {
+    return printLogoOptions.find((option) => option.id === selectedPrintLogoId) || printLogoOptions[0];
+}, [selectedPrintLogoId]);
 
 function handleChange(event) {
     const { name, value } = event.target;
@@ -103,13 +122,17 @@ function promptMenuHeaderDetails() {
     };
 }
 
-function buildMenuHeaderPage(details) {
+function buildMenuHeaderPage(details, selectedLogo) {
     return `
     <section class="print-header-page">
         <div class="print-header-shell">
-        <img class="print-header-logo" src="${logoText}" alt="Ka Ikena Menus" />
+        <img class="print-header-logo" src="${escapeHtml(selectedLogo.src)}" alt="${escapeHtml(selectedLogo.label)}" />
         <p class="print-header-eyebrow">Selected Menu</p>
-        <h1 class="print-header-title">We'd Like to Welcome ${escapeHtml(details.welcomeName || 'Our Guests')} to ${escapeHtml(details.welcomePlace || 'This Celebration')}</h1>
+        <h1 class="print-header-title">
+            <span class="print-header-title-line">Greetings to Our Guests,</span>
+            <span class="print-header-title-line">${escapeHtml(details.welcomeName || 'Our Guests')}</span>
+            <span class="print-header-title-line">to ${escapeHtml(details.welcomePlace || 'This Celebration')}</span>
+        </h1>
         <p class="print-header-date">${escapeHtml(details.eventDate || 'Event date to be announced')}</p>
         </div>
     </section>
@@ -131,12 +154,12 @@ function printDocument(title, bodyHtml) {
         <title>${escapeHtml(title)}</title>
         <style>
             @page {
-            margin: 16mm;
+            margin: 0;
             }
             body {
             font-family: Georgia, 'Times New Roman', serif;
             color: #2e190d;
-            margin: 0;
+            margin: 12mm;
             }
             h1, h2, h3 {
             margin-bottom: 0.4rem;
@@ -195,6 +218,12 @@ function printDocument(title, bodyHtml) {
             color: #2e190d;
             font-size: 28px;
             line-height: 1.25;
+            }
+            .print-header-title-line {
+            display: block;
+            }
+            .print-header-title-line + .print-header-title-line {
+            margin-top: 6px;
             }
             .print-header-date {
             margin: 18px 0 0;
@@ -266,7 +295,7 @@ function handlePrintSelectedMenu() {
     })
     .join('');
 
-    const menuHeaderPage = buildMenuHeaderPage(headerDetails);
+    const menuHeaderPage = buildMenuHeaderPage(headerDetails, selectedPrintLogo);
 
     const didOpen = printDocument(
     'Selected Menu',
@@ -354,6 +383,12 @@ async function handleSubmit(event) {
 
 return (
     <div className="page-shell">
+    {isLoading ? (
+        <div className="loading-overlay" role="status" aria-live="polite" aria-label="Generating menu">
+        <div className="loading-spinner" />
+        <p className="loading-text">Generating your menu and recipes...</p>
+        </div>
+    ) : null}
     <main className="layout">
         <div className="top-content">
         <section className="hero card">
@@ -460,6 +495,28 @@ return (
                     Print selected recipes
                 </button>
                 </div>
+                <div className="print-logo-picker">
+                <label htmlFor="print-logo-select">Menu print logo</label>
+                <select
+                    id="print-logo-select"
+                    onChange={(event) => setSelectedPrintLogoId(event.target.value)}
+                    value={selectedPrintLogoId}
+                >
+                    {printLogoOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                        {option.label}
+                    </option>
+                    ))}
+                </select>
+                <img
+                    alt={`${selectedPrintLogo.label} preview`}
+                    className="print-logo-preview"
+                    src={selectedPrintLogo.src}
+                />
+                </div>
+                <p className="print-note">
+                Tip: In the browser print dialog, disable Headers and Footers for a clean menu/PDF.
+                </p>
 
                 {groupedSelectedRecipes.length ? (
                 <div className="selected-menu-list">

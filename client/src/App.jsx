@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import logoText from '../assets/images/KaIkenaMenus-Text-No-Background.png';
 
 const CATEGORY_ORDER = ['appetizer', 'main', 'side', 'dessert', 'drink'];
 
@@ -16,44 +17,14 @@ theme: 'Mediterranean garden dinner',
 avoidances: '',
 };
 
-const PRINT_HEADER_COOKIE = 'dpp_print_header';
-const DEFAULT_PRINT_HEADER = 'Selected Dinner Party';
-
-function getCookieValue(name) {
-const parts = document.cookie.split('; ').map((part) => part.split('='));
-const found = parts.find(([key]) => key === name);
-
-if (!found) {
-    return '';
-}
-
-return decodeURIComponent(found[1] || '');
-}
-
-function setCookieValue(name, value, days = 365) {
-const maxAge = days * 24 * 60 * 60;
-document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
-}
-
 export default function App() {
 const [form, setForm] = useState(initialForm);
 const [recipes, setRecipes] = useState([]);
 const [error, setError] = useState('');
+const [printError, setPrintError] = useState('');
 const [isLoading, setIsLoading] = useState(false);
 const [expandedRecipeIds, setExpandedRecipeIds] = useState([]);
 const [selectedRecipeIds, setSelectedRecipeIds] = useState([]);
-const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-const [printHeader, setPrintHeader] = useState(DEFAULT_PRINT_HEADER);
-const [printHeaderInput, setPrintHeaderInput] = useState(DEFAULT_PRINT_HEADER);
-
-useEffect(() => {
-const savedHeader = getCookieValue(PRINT_HEADER_COOKIE);
-
-if (savedHeader) {
-    setPrintHeader(savedHeader);
-    setPrintHeaderInput(savedHeader);
-}
-}, []);
 
 const groupedRecipes = useMemo(() => {
     return CATEGORY_ORDER.map((category) => ({
@@ -106,12 +77,50 @@ function escapeHtml(text) {
     .replaceAll("'", '&#039;');
 }
 
+function promptMenuHeaderDetails() {
+    const welcomeName = window.prompt('Who would you like to welcome?', '');
+
+    if (welcomeName === null) {
+    return null;
+    }
+
+    const welcomePlace = window.prompt('Welcome them to where?', '');
+
+    if (welcomePlace === null) {
+    return null;
+    }
+
+    const eventDate = window.prompt('What is the custom date of the event?', '');
+
+    if (eventDate === null) {
+    return null;
+    }
+
+    return {
+    eventDate: eventDate.trim(),
+    welcomeName: welcomeName.trim(),
+    welcomePlace: welcomePlace.trim(),
+    };
+}
+
+function buildMenuHeaderPage(details) {
+    return `
+    <section class="print-header-page">
+        <div class="print-header-shell">
+        <img class="print-header-logo" src="${logoText}" alt="Ka Ikena Menus" />
+        <p class="print-header-eyebrow">Selected Menu</p>
+        <h1 class="print-header-title">We'd Like to Welcome ${escapeHtml(details.welcomeName || 'Our Guests')} to ${escapeHtml(details.welcomePlace || 'This Celebration')}</h1>
+        <p class="print-header-date">${escapeHtml(details.eventDate || 'Event date to be announced')}</p>
+        </div>
+    </section>
+    `;
+}
+
 function printDocument(title, bodyHtml) {
     const printWindow = window.open('', '_blank', 'width=900,height=700');
 
     if (!printWindow) {
-    window.alert('Unable to open the print window. Please allow pop-ups and try again.');
-    return;
+    return false;
     }
 
     printWindow.document.write(`
@@ -121,10 +130,13 @@ function printDocument(title, bodyHtml) {
         <meta charset="utf-8" />
         <title>${escapeHtml(title)}</title>
         <style>
+            @page {
+            margin: 16mm;
+            }
             body {
             font-family: Georgia, 'Times New Roman', serif;
             color: #2e190d;
-            margin: 32px;
+            margin: 0;
             }
             h1, h2, h3 {
             margin-bottom: 0.4rem;
@@ -146,6 +158,53 @@ function printDocument(title, bodyHtml) {
             font-size: 14px;
             line-height: 1.45;
             }
+            .print-header-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            page-break-after: always;
+            }
+            .print-header-shell {
+            max-width: 640px;
+            width: 100%;
+            padding: 32px;
+            text-align: center;
+            border: 2px solid #e4d2bc;
+            border-radius: 24px;
+            background: linear-gradient(180deg, #fffaf2 0%, #f7ebdc 100%);
+            box-shadow: 0 12px 28px rgba(73, 45, 20, 0.1);
+            }
+            .print-header-logo {
+            display: block;
+            width: min(260px, 70%);
+            height: auto;
+            margin: 0 auto 18px;
+            }
+            .print-header-eyebrow {
+            margin: 0 0 12px;
+            color: #9c4f2a;
+            font-family: Arial, sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            }
+            .print-header-title {
+            margin: 0;
+            color: #2e190d;
+            font-size: 28px;
+            line-height: 1.25;
+            }
+            .print-header-date {
+            margin: 18px 0 0;
+            color: #6b3418;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            }
             ul, ol {
             margin-top: 6px;
             }
@@ -165,23 +224,30 @@ function printDocument(title, bodyHtml) {
     </html>
     `);
     printWindow.document.close();
+
+    printWindow.addEventListener('afterprint', () => {
+    printWindow.close();
+    }, { once: true });
+
+    window.setTimeout(() => {
     printWindow.focus();
     printWindow.print();
-    printWindow.close();
-}
+    }, 100);
 
-function handleSavePrintHeader(event) {
-event.preventDefault();
-
-const cleanedHeader = printHeaderInput.trim() || DEFAULT_PRINT_HEADER;
-setPrintHeader(cleanedHeader);
-setPrintHeaderInput(cleanedHeader);
-setCookieValue(PRINT_HEADER_COOKIE, cleanedHeader);
-setIsSettingsOpen(false);
+    return true;
 }
 
 function handlePrintSelectedMenu() {
     if (!selectedRecipes.length) {
+    setPrintError('Select at least one recipe before printing the menu.');
+    return;
+    }
+
+    setPrintError('');
+
+    const headerDetails = promptMenuHeaderDetails();
+
+    if (!headerDetails) {
     return;
     }
 
@@ -200,18 +266,25 @@ function handlePrintSelectedMenu() {
     })
     .join('');
 
-    const menuTitle = `${printHeader} Menu`;
+    const menuHeaderPage = buildMenuHeaderPage(headerDetails);
 
-    printDocument(
-    menuTitle,
-    `<h1>${escapeHtml(menuTitle)}</h1>${menuSections}`
+    const didOpen = printDocument(
+    'Selected Menu',
+    `${menuHeaderPage}${menuSections}`
     );
+
+    if (!didOpen) {
+    setPrintError('Unable to open the print window. Please allow pop-ups and try again.');
+    }
 }
 
 function handlePrintSelectedRecipes() {
     if (!selectedRecipes.length) {
+    setPrintError('Select at least one recipe before printing recipes.');
     return;
     }
+
+    setPrintError('');
 
     const recipesHtml = selectedRecipes
     .map((recipe) => {
@@ -236,14 +309,18 @@ function handlePrintSelectedRecipes() {
     })
     .join('');
 
-    const recipeTitle = `${printHeader} Recipes`;
-    printDocument(recipeTitle, `<h1>${escapeHtml(recipeTitle)}</h1>${recipesHtml}`);
+    const didOpen = printDocument('Selected Recipes', recipesHtml);
+
+    if (!didOpen) {
+    setPrintError('Unable to open the print window. Please allow pop-ups and try again.');
+    }
 }
 
 async function handleSubmit(event) {
     event.preventDefault();
     setIsLoading(true);
     setError('');
+    setPrintError('');
     setExpandedRecipeIds([]);
     setSelectedRecipeIds([]);
 
@@ -277,45 +354,14 @@ async function handleSubmit(event) {
 
 return (
     <div className="page-shell">
-    <div className="page-settings">
-        <button
-        aria-label="Open print settings"
-        className="icon-button"
-        onClick={() => setIsSettingsOpen((current) => !current)}
-        type="button"
-        >
-        ⚙
-        </button>
-
-        {isSettingsOpen ? (
-        <section className="settings-popover">
-            <p className="settings-title">Print settings</p>
-            <form className="settings-form" onSubmit={handleSavePrintHeader}>
-            <label>
-                Print header
-                <input
-                onChange={(event) => setPrintHeaderInput(event.target.value)}
-                placeholder="Selected Dinner Party"
-                type="text"
-                value={printHeaderInput}
-                />
-            </label>
-            <div className="settings-actions">
-                <button className="settings-cancel" onClick={() => setIsSettingsOpen(false)} type="button">
-                Cancel
-                </button>
-                <button className="settings-save" type="submit">
-                Save
-                </button>
-            </div>
-            </form>
-        </section>
-        ) : null}
-    </div>
-
     <main className="layout">
         <div className="top-content">
         <section className="hero card">
+        <img
+            className="hero-logo"
+            src={logoText}
+            alt="Ka Ikena Menus"
+        />
         <p className="eyebrow">Menu Planner</p>
         <h1>Plan a complete menu around your guest list and theme.</h1>
         <p className="hero-copy">
@@ -395,6 +441,7 @@ return (
             {recipes.length ? (
             <div className="selected-menu-panel">
                 <p className="selected-count">Selected items: {selectedRecipes.length}</p>
+                {printError ? <p className="print-error">{printError}</p> : null}
                 <div className="selected-actions">
                 <button
                     className="secondary-button"

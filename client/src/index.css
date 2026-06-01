@@ -42,102 +42,6 @@ button {
 	padding: 32px 20px 64px;
 }
 
-.page-settings {
-	display: flex;
-	justify-content: flex-end;
-	margin: 0 auto 12px;
-	max-width: 1200px;
-	position: relative;
-	z-index: 4;
-}
-
-.icon-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 40px;
-	height: 40px;
-	border: 1px solid rgba(113, 52, 27, 0.25);
-	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.72);
-	font-size: 1.1rem;
-	color: #6b3418;
-}
-
-.icon-button:hover {
-	background: rgba(244, 232, 217, 0.95);
-}
-
-.settings-popover {
-	position: absolute;
-	top: 48px;
-	right: 0;
-	width: min(360px, calc(100vw - 40px));
-	padding: 16px;
-	border: 1px solid rgba(113, 52, 27, 0.2);
-	border-radius: 16px;
-	background: #fff9f2;
-	box-shadow: 0 16px 28px rgba(73, 45, 20, 0.16);
-}
-
-.settings-title {
-	margin: 0;
-	font-family: 'Arial', sans-serif;
-	font-weight: 700;
-	font-size: 0.95rem;
-	color: #6b3418;
-}
-
-.settings-form {
-	display: grid;
-	gap: 12px;
-	margin-top: 12px;
-}
-
-.settings-form label {
-	display: grid;
-	gap: 6px;
-	font-family: 'Arial', sans-serif;
-	font-size: 0.84rem;
-	font-weight: 700;
-	color: #7a5c45;
-}
-
-.settings-form input {
-	width: 100%;
-	border: 1px solid rgba(112, 75, 44, 0.2);
-	border-radius: 10px;
-	padding: 8px 10px;
-	background: #fff;
-}
-
-.settings-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
-}
-
-.settings-cancel,
-.settings-save {
-	border-radius: 999px;
-	padding: 8px 12px;
-	font-family: 'Arial', sans-serif;
-	font-size: 0.82rem;
-	font-weight: 700;
-}
-
-.settings-cancel {
-	border: 1px solid rgba(113, 52, 27, 0.25);
-	background: rgba(255, 255, 255, 0.8);
-	color: #6b3418;
-}
-
-.settings-save {
-	border: 0;
-	background: linear-gradient(135deg, #9c4f2a, #71341b);
-	color: #fff7ef;
-}
-
 .layout {
 	display: grid;
 	gap: 24px;
@@ -149,7 +53,7 @@ button {
 	display: grid;
 	gap: 24px;
 	grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-	align-items: start;
+	align-items: stretch;
 }
 
 .card {
@@ -164,6 +68,16 @@ button {
 	overflow: hidden;
 	padding: 28px;
 	position: relative;
+	height: 100%;
+}
+
+.hero-logo {
+	float: right;
+	width: min(240px, 34.5%);
+	max-width: 240px;
+	height: auto;
+	margin: 0 0 12px 24px;
+	object-fit: contain;
 }
 
 .hero::after {
@@ -202,7 +116,7 @@ button {
 
 .hero-copy {
 	font-size: 1.1rem;
-	margin: 20px 0 0;
+	margin: 12px 0 0;
 	max-width: 58ch;
 }
 
@@ -211,10 +125,11 @@ button {
 	gap: 16px;
 	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	margin-top: 28px;
+	clear: both;
 }
 
 .hero-notes div {
-	padding: 18px 20px;
+	padding: 8px 20px;
 	background: rgba(255, 255, 255, 0.48);
 	border-radius: 20px;
 }
@@ -235,7 +150,7 @@ button {
 
 .planner {
 	padding: 20px;
-	height: fit-content;
+	height: 100%;
 }
 
 .section-heading h2 {
@@ -338,6 +253,16 @@ button {
 	font-size: 0.9rem;
 	font-weight: 700;
 	color: #6b3418;
+}
+
+.print-error {
+	margin: 10px 0 0;
+	padding: 10px 12px;
+	border-radius: 14px;
+	background: rgba(167, 44, 32, 0.12);
+	color: #8a1d10;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.9rem;
 }
 
 .selected-actions {
@@ -534,16 +459,15 @@ button {
 }
 
 @media (max-width: 720px) {
-	.page-settings {
-		margin-bottom: 10px;
-	}
-
-	.settings-popover {
-		top: 44px;
-	}
-
 	.top-content {
 		grid-template-columns: 1fr;
+	}
+
+	.hero-logo {
+		float: none;
+		display: block;
+		width: min(240px, 69%);
+		margin: 0 auto 16px;
 	}
 
 	.planner-form {

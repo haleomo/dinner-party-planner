@@ -18,6 +18,7 @@ drink: 'Drinks',
 
 const initialForm = {
 guests: '8',
+    meal: 'dinner',
 theme: 'Mediterranean garden dinner',
 avoidances: '',
 };
@@ -129,9 +130,9 @@ function buildMenuHeaderPage(details, selectedLogo) {
         <img class="print-header-logo" src="${escapeHtml(selectedLogo.src)}" alt="${escapeHtml(selectedLogo.label)}" />
         <p class="print-header-eyebrow">Selected Menu</p>
         <h1 class="print-header-title">
-            <span class="print-header-title-line">Greetings to Our Guests,</span>
+            <span class="print-header-title-line">Greetings to,</span>
             <span class="print-header-title-line">${escapeHtml(details.welcomeName || 'Our Guests')}</span>
-            <span class="print-header-title-line">to ${escapeHtml(details.welcomePlace || 'This Celebration')}</span>
+            <span class="print-header-title-line">at ${escapeHtml(details.welcomePlace || 'This Celebration')}</span>
         </h1>
         <p class="print-header-date">${escapeHtml(details.eventDate || 'Event date to be announced')}</p>
         </div>
@@ -361,6 +362,7 @@ async function handleSubmit(event) {
         },
         body: JSON.stringify({
         guests: Number(form.guests),
+        meal: form.meal,
         theme: form.theme.trim(),
         avoidances: form.avoidances.trim(),
         }),
@@ -434,6 +436,22 @@ return (
                 value={form.guests}
                 />
             </label>
+
+            <label>
+                Meal
+                <select
+                name="meal"
+                onChange={handleChange}
+                value={form.meal}
+                >
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Dinner</option>
+                <option value="brunch">Brunch</option>
+                <option value="snack">Snack</option>
+                </select>
+            </label>
+
 
             <label>
                 Theme

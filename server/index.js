@@ -53,7 +53,8 @@ const RECIPE_TOOL = {
 };
 
 app.post('/api/recipes', async (req, res) => {
-  const { guests, theme, avoidances } = req.body;
+  const { guests, theme, avoidances, meal } = req.body;
+  const selectedMeal = String(meal || 'dinner').trim().toLowerCase();
 
   if (!guests || !theme) {
     return res.status(400).json({ error: 'guests and theme are required' });
@@ -69,10 +70,10 @@ app.post('/api/recipes', async (req, res) => {
       max_tokens: 8192,
       tools: [RECIPE_TOOL],
       tool_choice: { type: 'tool', name: 'suggest_recipes' },
-      system: 'You are an expert chef and party planner. Suggest a complete, balanced dinner party menu with recipes that authentically match the requested theme. Scale all ingredient quantities precisely for the specified number of guests. Provide clear, detailed step-by-step cooking instructions.',
+      system: 'You are an expert chef and party planner. Suggest a complete, balanced party menu for the requested meal type with recipes that authentically match the requested theme. Scale all ingredient quantities precisely for the specified number of guests. Provide clear, detailed step-by-step cooking instructions.',
       messages: [{
         role: 'user',
-        content: `I am hosting a dinner party for ${guests} guests. Theme: ${theme}. ${avoidText} Please suggest a full menu with 7–10 recipes covering appetizers, mains, sides, and desserts. All ingredient quantities must be scaled for ${guests} guests.`
+        content: `I am hosting a ${selectedMeal} party for ${guests} guests. Theme: ${theme}. ${avoidText} Please suggest a full menu with 7–10 recipes appropriate for ${selectedMeal}, covering appetizers, mains, sides, desserts, and optional drinks when suitable. All ingredient quantities must be scaled for ${guests} guests.`
       }]
     });
 

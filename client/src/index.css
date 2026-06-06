@@ -308,6 +308,16 @@ button {
 	font-size: 0.9rem;
 }
 
+.save-status {
+	margin: 10px 0 0;
+	padding: 10px 12px;
+	border-radius: 14px;
+	background: rgba(43, 122, 68, 0.13);
+	color: #1f6033;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.9rem;
+}
+
 .selected-actions {
 	display: flex;
 	gap: 10px;
@@ -544,6 +554,62 @@ button {
 
 .secondary-button:hover {
 	background: rgba(244, 232, 217, 0.9);
+}
+
+.saved-menus-section {
+	margin-top: 12px;
+}
+
+.saved-menus-toggle {
+	margin-top: 0;
+	width: 100%;
+	text-align: center;
+}
+
+.saved-menus-list {
+	display: grid;
+	gap: 8px;
+	margin-top: 10px;
+	max-height: 260px;
+	overflow-y: auto;
+}
+
+.saved-menu-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 14px;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.7);
+	border: 1px solid rgba(112, 75, 44, 0.12);
+}
+
+.saved-menu-meta {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.saved-menu-meta strong {
+	font-size: 0.9rem;
+	color: #2e190d;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.saved-menu-meta span {
+	font-family: 'Arial', sans-serif;
+	font-size: 0.8rem;
+	color: #7a5c45;
+}
+
+.saved-menu-item .secondary-button {
+	margin-top: 0;
+	flex-shrink: 0;
+	padding: 7px 14px;
 }
 
 @media (max-width: 720px) {

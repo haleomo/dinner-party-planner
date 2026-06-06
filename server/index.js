@@ -2,12 +2,82 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
+import pg from 'pg';
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
+const { Pool } = pg;
+const DB_CONFIG = {
+  host: process.env.PGHOST || 'localhost',
+  port: Number(process.env.PGPORT || 5432),
+  user: process.env.PGUSER || 'dinner_user',
+  password: process.env.PGPASSWORD || 'dinner_password',
+  database: process.env.PGDATABASE || 'dinner_party_planner',
+};
+
+const pool = new Pool(
+  process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL }
+    : DB_CONFIG
+);
+
+function getDatabaseConnectionInfo() {
+  if (process.env.DATABASE_URL) {
+    return {
+      source: 'DATABASE_URL',
+      database: process.env.PGDATABASE || DB_CONFIG.database,
+    };
+  }
+
+  return {
+    source: 'individual env vars',
+    host: DB_CONFIG.host,
+    port: DB_CONFIG.port,
+    user: DB_CONFIG.user,
+    database: DB_CONFIG.database,
+  };
+}
+
+function formatDatabaseError(err) {
+  return {
+    name: err?.name,
+    message: err?.message,
+    code: err?.code,
+    severity: err?.severity,
+    detail: err?.detail,
+    hint: err?.hint,
+    where: err?.where,
+    schema: err?.schema,
+    table: err?.table,
+    column: err?.column,
+    constraint: err?.constraint,
+    routine: err?.routine,
+    stack: err?.stack,
+    errors: Array.isArray(err?.errors)
+      ? err.errors.map((nestedError) => formatDatabaseError(nestedError))
+      : undefined,
+  };
+}
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const CREATE_MENUS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS menus (
+    id BIGSERIAL PRIMARY KEY,
+    guests INTEGER NOT NULL,
+    meal TEXT NOT NULL,
+    theme TEXT NOT NULL,
+    avoidances TEXT NOT NULL DEFAULT '',
+    recipes JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+`;
+
+async function initDatabase() {
+  await pool.query(CREATE_MENUS_TABLE_SQL);
+}
 
 const RECIPE_TOOL = {
   name: 'suggest_recipes',
@@ -94,5 +164,69 @@ app.post('/api/recipes', async (req, res) => {
   }
 });
 
+app.post('/api/menus', async (req, res) => {
+  const { guests, meal, theme, avoidances, recipes } = req.body;
+
+  if (!guests || !theme || !Array.isArray(recipes) || !recipes.length) {
+    return res.status(400).json({ error: 'guests, theme, and at least one recipe are required' });
+  }
+
+  const selectedMeal = String(meal || 'dinner').trim().toLowerCase();
+
+  try {
+    const result = await pool.query(
+      `
+        INSERT INTO menus (guests, meal, theme, avoidances, recipes)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, created_at
+      `,
+      [
+        Number(guests),
+        selectedMeal,
+        String(theme).trim(),
+        String(avoidances || '').trim(),
+        JSON.stringify(recipes),
+      ]
+    );
+
+    res.status(201).json({
+      id: result.rows[0].id,
+      createdAt: result.rows[0].created_at,
+      message: 'Menu saved successfully.',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to save menu.' });
+  }
+});
+
+app.get('/api/menus', async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, guests, meal, theme, avoidances, recipes, created_at
+      FROM menus
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+
+    res.json({ menus: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load saved menus.' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+initDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database:', {
+      ...formatDatabaseError(err),
+      connection: getDatabaseConnectionInfo(),
+    });
+    process.exit(1);
+  });

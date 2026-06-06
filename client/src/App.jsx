@@ -37,10 +37,16 @@ const [form, setForm] = useState(initialForm);
 const [recipes, setRecipes] = useState([]);
 const [error, setError] = useState('');
 const [printError, setPrintError] = useState('');
+const [saveStatus, setSaveStatus] = useState('');
 const [selectedPrintLogoId, setSelectedPrintLogoId] = useState(printLogoOptions[0].id);
 const [isLoading, setIsLoading] = useState(false);
+const [isSaving, setIsSaving] = useState(false);
 const [expandedRecipeIds, setExpandedRecipeIds] = useState([]);
 const [selectedRecipeIds, setSelectedRecipeIds] = useState([]);
+const [savedMenus, setSavedMenus] = useState([]);
+const [isFetchingMenus, setIsFetchingMenus] = useState(false);
+const [savedMenusError, setSavedMenusError] = useState('');
+const [showSavedMenus, setShowSavedMenus] = useState(false);
 
 const groupedRecipes = useMemo(() => {
     return CATEGORY_ORDER.map((category) => ({
@@ -346,11 +352,86 @@ function handlePrintSelectedRecipes() {
     }
 }
 
+async function handleSaveMenu() {
+    if (!recipes.length) {
+    setSaveStatus('Generate a menu before saving.');
+    return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus('');
+
+    try {
+    const response = await fetch('/api/menus', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+        guests: Number(form.guests),
+        meal: form.meal,
+        theme: form.theme.trim(),
+        avoidances: form.avoidances.trim(),
+        recipes,
+        }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || 'Unable to save menu right now.');
+    }
+
+    setSaveStatus(`Menu saved successfully (ID: ${data.id}).`);
+    } catch (saveError) {
+    setSaveStatus(saveError.message);
+    } finally {
+    setIsSaving(false);
+    }
+}
+
+async function handleFetchMenus() {
+    if (showSavedMenus) {
+    setShowSavedMenus(false);
+    return;
+    }
+    setIsFetchingMenus(true);
+    setSavedMenusError('');
+    try {
+    const response = await fetch('/api/menus');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Unable to load saved menus.');
+    setSavedMenus(data.menus || []);
+    setShowSavedMenus(true);
+    } catch (err) {
+    setSavedMenusError(err.message);
+    } finally {
+    setIsFetchingMenus(false);
+    }
+}
+
+function handleOpenMenu(menu) {
+    setForm({
+    guests: String(menu.guests),
+    meal: menu.meal,
+    theme: menu.theme,
+    avoidances: menu.avoidances || '',
+    });
+    setRecipes(menu.recipes);
+    setExpandedRecipeIds([]);
+    setSelectedRecipeIds([]);
+    setError('');
+    setPrintError('');
+    setSaveStatus('');
+    setShowSavedMenus(false);
+}
+
 async function handleSubmit(event) {
     event.preventDefault();
     setIsLoading(true);
     setError('');
     setPrintError('');
+    setSaveStatus('');
     setExpandedRecipeIds([]);
     setSelectedRecipeIds([]);
 
@@ -482,6 +563,41 @@ return (
             </form>
 
             {error ? <p className="error-banner">{error}</p> : null}
+
+            <div className="saved-menus-section">
+            <button
+                className="secondary-button saved-menus-toggle"
+                disabled={isFetchingMenus}
+                onClick={handleFetchMenus}
+                type="button"
+            >
+                {isFetchingMenus ? 'Loading...' : showSavedMenus ? 'Hide saved menus' : 'Load a saved menu'}
+            </button>
+            {savedMenusError ? <p className="print-error">{savedMenusError}</p> : null}
+            {showSavedMenus ? (
+                <div className="saved-menus-list">
+                {savedMenus.length === 0 ? (
+                    <p className="selection-hint">No saved menus yet.</p>
+                ) : (
+                    savedMenus.map((menu) => (
+                    <div className="saved-menu-item" key={menu.id}>
+                        <div className="saved-menu-meta">
+                        <strong>{menu.theme}</strong>
+                        <span>{menu.guests} guests &middot; {menu.meal} &middot; {new Date(menu.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <button
+                        className="secondary-button"
+                        onClick={() => handleOpenMenu(menu)}
+                        type="button"
+                        >
+                        Open
+                        </button>
+                    </div>
+                    ))
+                )}
+                </div>
+            ) : null}
+            </div>
         </section>
         </div>
 
@@ -512,7 +628,16 @@ return (
                 >
                     Print selected recipes
                 </button>
+                <button
+                    className="secondary-button"
+                    disabled={!recipes.length || isSaving || isLoading}
+                    onClick={handleSaveMenu}
+                    type="button"
+                >
+                    {isSaving ? 'Saving menu...' : 'Save menu to database'}
+                </button>
                 </div>
+                {saveStatus ? <p className="save-status">{saveStatus}</p> : null}
                 <div className="print-logo-picker">
                 <label htmlFor="print-logo-select">Menu print logo</label>
                 <select

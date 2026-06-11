@@ -236,6 +236,98 @@ button {
 	min-height: 84px;
 }
 
+.dish-ideas-section {
+	display: grid;
+	gap: 10px;
+	margin-top: 2px;
+	padding: 14px;
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.44);
+	border: 1px solid rgba(112, 75, 44, 0.12);
+}
+
+.dish-ideas-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.85rem;
+	font-weight: 700;
+	color: #6b3418;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.dish-ideas-header span {
+	white-space: nowrap;
+}
+
+.dish-ideas-help {
+	margin: 0;
+	color: #7a5c45;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.84rem;
+	line-height: 1.45;
+}
+
+.dish-ideas-list {
+	display: grid;
+	gap: 12px;
+}
+
+.dish-idea-row {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: 1fr;
+	padding: 12px;
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.62);
+	border: 1px solid rgba(112, 75, 44, 0.1);
+}
+
+.dish-idea-row-controls {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.dish-idea-row-controls label {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.dish-idea-row label {
+	display: grid;
+	gap: 6px;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.82rem;
+	font-weight: 700;
+}
+
+.dish-idea-row input,
+.dish-idea-row textarea,
+.dish-idea-row select {
+	width: 100%;
+	border: 1px solid rgba(112, 75, 44, 0.15);
+	border-radius: 14px;
+	padding: 8px 10px;
+	background: rgba(255, 255, 255, 0.92);
+	color: #2e190d;
+}
+
+.dish-idea-row textarea {
+	min-height: 72px;
+	resize: vertical;
+}
+
+.dish-idea-add,
+.dish-idea-remove {
+	margin-top: 0;
+	white-space: nowrap;
+	align-self: flex-end;
+}
+
 .planner-form .primary-button {
 	grid-column: auto;
 	padding: 12px 18px;
@@ -612,6 +704,213 @@ button {
 	padding: 7px 14px;
 }
 
+/* ── Tab bar ─────────────────────────────────────────── */
+
+.tab-bar {
+	display: flex;
+	gap: 8px;
+	margin: 0 0 4px;
+}
+
+.tab-button {
+	border: 1px solid rgba(113, 52, 27, 0.25);
+	border-radius: 999px;
+	padding: 10px 22px;
+	background: rgba(255, 255, 255, 0.55);
+	color: #6b3418;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.9rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.tab-button:hover {
+	background: rgba(244, 232, 217, 0.9);
+}
+
+.tab-button--active {
+	background: linear-gradient(135deg, #9c4f2a, #71341b);
+	color: #fff7ef;
+	border-color: transparent;
+	box-shadow: 0 6px 18px rgba(113, 52, 27, 0.22);
+}
+
+.tab-button--active:hover {
+	background: linear-gradient(135deg, #9c4f2a, #71341b);
+}
+
+/* ── Beverage tab ────────────────────────────────────── */
+
+.beverage-tab {
+	padding: 32px;
+	max-width: 900px;
+	margin: 0 auto;
+	width: 100%;
+}
+
+.beverage-tab-help {
+	margin: 10px 0 0;
+	color: #7a5c45;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.92rem;
+	line-height: 1.55;
+}
+
+.beverage-tab-help code {
+	font-family: 'Courier New', monospace;
+	font-size: 0.9em;
+	background: rgba(113, 52, 27, 0.08);
+	border-radius: 4px;
+	padding: 1px 5px;
+}
+
+.beverage-schema-example {
+	margin-top: 14px;
+	border: 1px solid rgba(112, 75, 44, 0.15);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.55);
+}
+
+.beverage-schema-example summary {
+	cursor: pointer;
+	padding: 10px 16px;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.86rem;
+	font-weight: 700;
+	color: #6b3418;
+	user-select: none;
+}
+
+.beverage-schema-example pre {
+	margin: 0;
+	padding: 12px 16px;
+	border-top: 1px solid rgba(112, 75, 44, 0.12);
+	font-family: 'Courier New', monospace;
+	font-size: 0.82rem;
+	line-height: 1.6;
+	color: #3a2010;
+	overflow-x: auto;
+	white-space: pre;
+}
+
+.beverage-upload-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-top: 20px;
+}
+
+.beverage-file-label {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 6px;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.85rem;
+	font-weight: 700;
+	color: #6b3418;
+}
+
+.beverage-file-label span {
+	display: inline-block;
+	border: 1px solid rgba(113, 52, 27, 0.3);
+	border-radius: 999px;
+	padding: 10px 18px;
+	background: rgba(255, 255, 255, 0.7);
+	color: #6b3418;
+	font-family: 'Arial', sans-serif;
+	font-size: 0.86rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background 140ms ease;
+}
+
+.beverage-file-label span:hover {
+	background: rgba(244, 232, 217, 0.9);
+}
+
+.beverage-file-label input[type='file'] {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+}
+
+.beverage-file-name {
+	font-family: 'Arial', sans-serif;
+	font-size: 0.88rem;
+	color: #5d3820;
+	max-width: 280px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.beverage-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	margin-top: 22px;
+}
+
+.beverage-actions .secondary-button {
+	margin-top: 0;
+}
+
+.beverage-menu-display {
+	display: grid;
+	gap: 28px;
+	margin-top: 28px;
+}
+
+.beverage-section {
+	border-top: 1px solid rgba(112, 75, 44, 0.15);
+	padding-top: 20px;
+}
+
+.beverage-section:first-child {
+	border-top: none;
+	padding-top: 0;
+}
+
+.beverage-section-title {
+	font-size: 1.4rem;
+	color: #2e190d;
+	margin: 0 0 14px;
+}
+
+.beverage-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+
+.beverage-item {
+	padding: 14px 18px;
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.72);
+	border: 1px solid rgba(112, 75, 44, 0.1);
+}
+
+.beverage-item-title {
+	font-size: 1rem;
+	color: #2e190d;
+	display: block;
+}
+
+.beverage-item-description {
+	margin: 4px 0 0;
+	font-size: 0.9rem;
+	color: #7a5c45;
+	line-height: 1.45;
+}
+
 @media (max-width: 720px) {
 	.top-content {
 		grid-template-columns: 1fr;
@@ -625,6 +924,10 @@ button {
 	}
 
 	.planner-form {
+		grid-template-columns: 1fr;
+	}
+
+	.dish-idea-row {
 		grid-template-columns: 1fr;
 	}
 

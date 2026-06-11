@@ -1,0 +1,33 @@
+{
+    "headers": [  
+                {
+                    "title": "Soft Drinks",
+                    "beverages": [
+                    { "title": "Tejava Tea", "description": "." },
+                    { "title": "Arizona Green Tea", "description": "."  },
+                    { "title": "Coca-Cola", "description": "."  },
+                    { "title": "Diet Coke", "description": "."  }
+                    ]
+                },
+                {
+                    "title": "Cocktails",
+                    "beverages": [
+                    { "title": "Margarita", "description": "Tequila, lime juice and triple sec." },
+                    { "title": "Old Fashioned" }
+                    ]
+                },
+                {
+                    "title": "Wine",
+                    "beverages": [
+                    { "title": "Pinot Noir 2021", "description": "Silky red from the Willamette Valley." },
+                    { "title": "Chardonnay 2022" }
+                    ]
+                },
+                {
+                    "title": "Beer",
+                    "beverages": [
+                    { "title": "IPA", "description": "Bright citrus hop-forward ale." }
+                    ]
+                }
+    ]
+}

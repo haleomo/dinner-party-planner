@@ -79,6 +79,20 @@ async function initDatabase() {
   await pool.query(CREATE_MENUS_TABLE_SQL);
 }
 
+function formatDishIdeas(dishIdeas) {
+  if (!Array.isArray(dishIdeas) || !dishIdeas.length) {
+    return 'No user-suggested dish ideas were provided.';
+  }
+
+  return dishIdeas
+    .map((dishIdea, index) => {
+      const ideaText = String(dishIdea?.idea || '').trim();
+      const category = String(dishIdea?.category || '').trim() || 'appetizer';
+      return `${index + 1}. ${category}: ${ideaText}`;
+    })
+    .join('\n');
+}
+
 const RECIPE_TOOL = {
   name: 'suggest_recipes',
   description: 'Suggest a curated, balanced set of recipes for a dinner party.',
@@ -123,7 +137,7 @@ const RECIPE_TOOL = {
 };
 
 app.post('/api/recipes', async (req, res) => {
-  const { guests, theme, avoidances, meal } = req.body;
+  const { guests, theme, avoidances, meal, dishIdeas } = req.body;
   const selectedMeal = String(meal || 'dinner').trim().toLowerCase();
 
   if (!guests || !theme) {
@@ -133,6 +147,7 @@ app.post('/api/recipes', async (req, res) => {
   const avoidText = avoidances?.trim()
     ? `Strictly avoid any recipes containing: ${avoidances}.`
     : 'No specific ingredient restrictions.';
+  const dishIdeasText = formatDishIdeas(dishIdeas);
 
   try {
     const response = await anthropic.messages.create({
@@ -140,10 +155,15 @@ app.post('/api/recipes', async (req, res) => {
       max_tokens: 8192,
       tools: [RECIPE_TOOL],
       tool_choice: { type: 'tool', name: 'suggest_recipes' },
-      system: 'You are an expert chef and party planner. Suggest a complete, balanced party menu for the requested meal type with recipes that authentically match the requested theme. Scale all ingredient quantities precisely for the specified number of guests. Provide clear, detailed step-by-step cooking instructions.',
+      system: 'You are an expert chef and party planner. Suggest a complete, balanced party menu for the requested meal type with recipes that authentically match the requested theme. Scale all ingredient quantities precisely for the specified number of guests. Provide clear, detailed step-by-step cooking instructions. Treat ingredient avoidances as hard constraints. When the user provides dish ideas, use each idea as a menu direction and adapt it into a suitable recipe if needed while preserving the stated course.',
       messages: [{
         role: 'user',
-        content: `I am hosting a ${selectedMeal} party for ${guests} guests. Theme: ${theme}. ${avoidText} Please suggest a full menu with 7–10 recipes appropriate for ${selectedMeal}, covering appetizers, mains, sides, desserts, and optional drinks when suitable. All ingredient quantities must be scaled for ${guests} guests.`
+        content: `I am hosting a ${selectedMeal} party for ${guests} guests. Theme: ${theme}. ${avoidText}
+
+User-suggested dish ideas:
+${dishIdeasText}
+
+Please suggest a full menu with 7–10 recipes appropriate for ${selectedMeal}, covering appetizers, mains, sides, desserts, and optional drinks when suitable. Include the user-suggested ideas as part of the menu when they fit the meal and theme. If a suggested idea is not suitable as written, create the closest appropriate recipe version that still respects the chosen course and ingredient avoidances. All ingredient quantities must be scaled for ${guests} guests.`
       }]
     });
 

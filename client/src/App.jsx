@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import logoText from '../assets/images/KaIkenaMenus-Text-No-Background.png';
 import logoTextCheddar from '../assets/images/KaIkenaMenus-Cheddar.png';
 import logoTextSolid from '../assets/images/KaIkenaMenus-Text.png';
@@ -16,12 +16,27 @@ dessert: 'Desserts',
 drink: 'Drinks',
 };
 
+const suggestedDishCategories = [
+    { value: 'appetizer', label: 'Appetizer' },
+    { value: 'main', label: 'Main dish' },
+    { value: 'side', label: 'Side' },
+    { value: 'dessert', label: 'Dessert' },
+];
+
 const initialForm = {
 guests: '8',
     meal: 'dinner',
 theme: 'Mediterranean garden dinner',
 avoidances: '',
 };
+
+function createDishIdea() {
+    return {
+    id: crypto.randomUUID(),
+    idea: '',
+    category: 'appetizer',
+    };
+}
 
 const printLogoOptions = [
 { id: 'text-no-background', label: 'Ka Ikena Text (No Background)', src: logoText },
@@ -47,6 +62,15 @@ const [savedMenus, setSavedMenus] = useState([]);
 const [isFetchingMenus, setIsFetchingMenus] = useState(false);
 const [savedMenusError, setSavedMenusError] = useState('');
 const [showSavedMenus, setShowSavedMenus] = useState(false);
+const [dishIdeas, setDishIdeas] = useState([createDishIdea()]);
+const dishIdeaInputRefs = useRef(new Map());
+const [focusedDishIdeaId, setFocusedDishIdeaId] = useState('');
+const [activeTab, setActiveTab] = useState('menu');
+const [beverageMenu, setBeverageMenu] = useState(null);
+const [beverageFileName, setBeverageFileName] = useState('');
+const [beverageError, setBeverageError] = useState('');
+const [beveragePrintError, setBeveragePrintError] = useState('');
+const beverageFileInputRef = useRef(null);
 
 const groupedRecipes = useMemo(() => {
     return CATEGORY_ORDER.map((category) => ({
@@ -77,6 +101,36 @@ function handleChange(event) {
     [name]: value,
     }));
 }
+
+function addDishIdea() {
+    const nextDishIdea = createDishIdea();
+    setDishIdeas((current) => [...current, nextDishIdea]);
+    setFocusedDishIdeaId(nextDishIdea.id);
+}
+
+function removeDishIdea(id) {
+    setDishIdeas((current) => (current.length > 1 ? current.filter((idea) => idea.id !== id) : current));
+}
+
+function updateDishIdea(id, field, value) {
+    setDishIdeas((current) => current.map((idea) => (
+    idea.id === id ? { ...idea, [field]: value } : idea
+    )));
+}
+
+useEffect(() => {
+    if (!focusedDishIdeaId) {
+    return;
+    }
+
+    const targetInput = dishIdeaInputRefs.current.get(focusedDishIdeaId);
+
+    if (targetInput) {
+    targetInput.focus();
+    }
+
+    setFocusedDishIdeaId('');
+}, [focusedDishIdeaId]);
 
 function toggleRecipeDetails(recipeId) {
     setExpandedRecipeIds((current) =>
@@ -390,6 +444,104 @@ async function handleSaveMenu() {
     }
 }
 
+function handleBeverageFileUpload(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+    return;
+    }
+
+    setBeverageError('');
+    setBeveragePrintError('');
+    setBeverageFileName(file.name);
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+    try {
+        const parsed = JSON.parse(readerEvent.target.result);
+
+        if (!Array.isArray(parsed?.headers)) {
+        throw new Error('JSON must have a top-level "headers" array.');
+        }
+
+        for (const header of parsed.headers) {
+        if (typeof header?.title !== 'string' || !header.title.trim()) {
+            throw new Error('Each header must have a non-empty "title" string.');
+        }
+
+        if (!Array.isArray(header?.beverages)) {
+            throw new Error(`Header "${header.title}" must have a "beverages" array.`);
+        }
+        }
+
+        setBeverageMenu(parsed.headers);
+    } catch (parseError) {
+        setBeverageError(parseError.message);
+        setBeverageMenu(null);
+    }
+    };
+
+    reader.onerror = () => {
+    setBeverageError('Failed to read the file. Please try again.');
+    setBeverageMenu(null);
+    };
+
+    reader.readAsText(file);
+}
+
+function handleClearBeverageMenu() {
+    setBeverageMenu(null);
+    setBeverageFileName('');
+    setBeverageError('');
+    setBeveragePrintError('');
+
+    if (beverageFileInputRef.current) {
+    beverageFileInputRef.current.value = '';
+    }
+}
+
+function handlePrintBeverageMenu() {
+    if (!beverageMenu?.length) {
+    setBeveragePrintError('Load a beverage menu file before printing.');
+    return;
+    }
+
+    setBeveragePrintError('');
+
+    const sectionsHtml = beverageMenu
+    .map((header) => {
+        const beveragesHtml = (header.beverages || [])
+        .map((beverage) => {
+            const descriptionHtml = beverage.description
+            ? `<p class="bev-description">${escapeHtml(beverage.description)}</p>`
+            : '';
+
+            return `<li class="bev-item"><strong>${escapeHtml(beverage.title)}</strong>${descriptionHtml}</li>`;
+        })
+        .join('');
+
+        return `<section class="bev-section"><h2>${escapeHtml(header.title)}</h2><ul class="bev-list">${beveragesHtml}</ul></section>`;
+    })
+    .join('');
+
+    const didOpen = printDocument(
+    'Beverage Menu',
+    `<style>
+        .bev-section { margin-bottom: 24px; }
+        .bev-section h2 { font-size: 18px; border-bottom: 1px solid #e4d2bc; padding-bottom: 6px; margin-bottom: 10px; }
+        .bev-list { list-style: none; margin: 0; padding: 0; }
+        .bev-item { margin-bottom: 10px; }
+        .bev-item strong { font-size: 14px; }
+        .bev-description { margin: 2px 0 0 12px; font-size: 13px; color: #6b4226; }
+    </style>${sectionsHtml}`
+    );
+
+    if (!didOpen) {
+    setBeveragePrintError('Unable to open the print window. Please allow pop-ups and try again.');
+    }
+}
+
 async function handleFetchMenus() {
     if (showSavedMenus) {
     setShowSavedMenus(false);
@@ -417,6 +569,7 @@ function handleOpenMenu(menu) {
     theme: menu.theme,
     avoidances: menu.avoidances || '',
     });
+    setDishIdeas([createDishIdea()]);
     setRecipes(menu.recipes);
     setExpandedRecipeIds([]);
     setSelectedRecipeIds([]);
@@ -436,6 +589,13 @@ async function handleSubmit(event) {
     setSelectedRecipeIds([]);
 
     try {
+    const submittedDishIdeas = dishIdeas
+    .map((idea) => ({
+        idea: idea.idea.trim(),
+        category: idea.category,
+    }))
+    .filter((idea) => idea.idea.length > 0);
+
     const response = await fetch('/api/recipes', {
         method: 'POST',
         headers: {
@@ -446,6 +606,7 @@ async function handleSubmit(event) {
         meal: form.meal,
         theme: form.theme.trim(),
         avoidances: form.avoidances.trim(),
+        dishIdeas: submittedDishIdeas,
         }),
     });
 
@@ -473,6 +634,128 @@ return (
         </div>
     ) : null}
     <main className="layout">
+        <nav className="tab-bar" role="tablist">
+        <button
+            className={`tab-button${activeTab === 'menu' ? ' tab-button--active' : ''}`}
+            onClick={() => setActiveTab('menu')}
+            role="tab"
+            aria-selected={activeTab === 'menu'}
+            type="button"
+        >
+            Menu Planner
+        </button>
+        <button
+            className={`tab-button${activeTab === 'beverages' ? ' tab-button--active' : ''}`}
+            onClick={() => setActiveTab('beverages')}
+            role="tab"
+            aria-selected={activeTab === 'beverages'}
+            type="button"
+        >
+            Beverage Menu
+        </button>
+        </nav>
+
+        {activeTab === 'beverages' ? (
+        <section className="beverage-tab card">
+            <div className="section-heading">
+            <p className="eyebrow">Beverage Menu</p>
+            <h2>Upload a beverage menu</h2>
+            </div>
+
+            <p className="beverage-tab-help">
+            Upload a JSON file to display and print a beverage menu. The file must
+            contain a top-level <code>headers</code> array, where each entry has a{' '}
+            <code>title</code> and a <code>beverages</code> array.
+            </p>
+
+            <details className="beverage-schema-example">
+            <summary>Show expected JSON format</summary>
+            <pre>{`{
+  "headers": [
+    {
+      "title": "Wine",
+      "beverages": [
+        { "title": "Pinot Noir 2021", "description": "Silky red from the Willamette Valley." },
+        { "title": "Chardonnay 2022" }
+      ]
+    },
+    {
+      "title": "Beer",
+      "beverages": [
+        { "title": "IPA", "description": "Bright citrus hop-forward ale." }
+      ]
+    }
+  ]
+}`}</pre>
+            </details>
+
+            <div className="beverage-upload-row">
+            <label className="beverage-file-label">
+                <span>Choose JSON file</span>
+                <input
+                accept=".json,application/json"
+                onChange={handleBeverageFileUpload}
+                ref={beverageFileInputRef}
+                type="file"
+                />
+            </label>
+            {beverageFileName ? (
+                <span className="beverage-file-name">{beverageFileName}</span>
+            ) : null}
+            {beverageMenu ? (
+                <button
+                className="secondary-button"
+                onClick={handleClearBeverageMenu}
+                type="button"
+                >
+                Clear
+                </button>
+            ) : null}
+            </div>
+
+            {beverageError ? (
+            <p className="error-banner">{beverageError}</p>
+            ) : null}
+
+            {beverageMenu ? (
+            <>
+                <div className="beverage-actions">
+                <button
+                    className="secondary-button"
+                    onClick={handlePrintBeverageMenu}
+                    type="button"
+                >
+                    Print beverage menu
+                </button>
+                {beveragePrintError ? (
+                    <p className="print-error">{beveragePrintError}</p>
+                ) : null}
+                </div>
+
+                <div className="beverage-menu-display">
+                {beverageMenu.map((header) => (
+                    <section className="beverage-section" key={header.title}>
+                    <h3 className="beverage-section-title">{header.title}</h3>
+                    <ul className="beverage-list">
+                        {(header.beverages || []).map((beverage, index) => (
+                        <li className="beverage-item" key={`${header.title}-${index}`}>
+                            <strong className="beverage-item-title">{beverage.title}</strong>
+                            {beverage.description ? (
+                            <p className="beverage-item-description">{beverage.description}</p>
+                            ) : null}
+                        </li>
+                        ))}
+                    </ul>
+                    </section>
+                ))}
+                </div>
+            </>
+            ) : null}
+        </section>
+        ) : null}
+
+        {activeTab === 'menu' ? (
+        <>
         <div className="top-content">
         <section className="hero card">
         <img
@@ -556,6 +839,62 @@ return (
                 value={form.avoidances}
                 />
             </label>
+
+            <div className="dish-ideas-section">
+                <div className="dish-ideas-header">
+                <span>Dish ideas</span>
+                <button className="secondary-button dish-idea-add" onClick={addDishIdea} type="button">
+                    Add idea
+                </button>
+                </div>
+                <p className="dish-ideas-help">
+                Add one or more suggestions and choose the course. The generator will adapt them to the meal and ingredient avoidances.
+                </p>
+                <div className="dish-ideas-list">
+                {dishIdeas.map((dishIdea, index) => (
+                    <div className="dish-idea-row" key={dishIdea.id}>
+                    <label>
+                        <textarea
+                        ref={(element) => {
+                            if (element) {
+                            dishIdeaInputRefs.current.set(dishIdea.id, element);
+                            } else {
+                            dishIdeaInputRefs.current.delete(dishIdea.id);
+                            }
+                        }}
+                        onChange={(event) => updateDishIdea(dishIdea.id, 'idea', event.target.value)}
+                        placeholder="Tofu Musubi"
+                        rows="2"
+                        value={dishIdea.idea}
+                        />
+                    </label>
+                    <div className="dish-idea-row-controls">
+                    <label>
+                        Course
+                        <select
+                        onChange={(event) => updateDishIdea(dishIdea.id, 'category', event.target.value)}
+                        value={dishIdea.category}
+                        >
+                        {suggestedDishCategories.map((option) => (
+                            <option key={option.value} value={option.value}>
+                            {option.label}
+                            </option>
+                        ))}
+                        </select>
+                    </label>
+                    <button
+                        className="secondary-button dish-idea-remove"
+                        disabled={dishIdeas.length === 1}
+                        onClick={() => removeDishIdea(dishIdea.id)}
+                        type="button"
+                    >
+                        Remove
+                    </button>
+                    </div>
+                    </div>
+                ))}
+                </div>
+            </div>
 
             <button className="primary-button" disabled={isLoading} type="submit">
                 {isLoading ? 'Planning menu...' : 'Generate dinner party menu'}
@@ -775,6 +1114,8 @@ return (
             </div>
             )}
         </section>
+        </>
+        ) : null}
     </main>
     </div>
 );
